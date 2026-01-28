@@ -3,153 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CityPulse | Intelligence Hub</title>
+    <title>CityPulse | National Intelligence Hub</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #f1f5f9; --panel: #ffffff; --text: #0f172a; --text-muted: #64748b;
-            --accent: #2563eb; --border: #e2e8f0; --success: #10b981; --danger: #ef4444; --warning: #f59e0b;
-        }
-        [data-theme="dark"] {
-            --bg: #020617; --panel: #0f172a; --text: #f1f5f9; --text-muted: #94a3b8;
-            --accent: #38bdf8; --border: #1e293b; --success: #4ade80; --danger: #f87171; --warning: #fbbf24;
+            --bg: #020617; --panel: rgba(15, 23, 42, 0.8); --text: #f1f5f9; --text-muted: #94a3b8;
+            --accent: #38bdf8; --border: rgba(30, 41, 59, 0.7); --success: #4ade80; --danger: #f87171; --warning: #fbbf24;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
+        body { 
+            background: var(--bg); 
+            background-image: radial-gradient(circle at 2px 2px, var(--border) 1px, transparent 0);
+            background-size: 30px 30px;
+            color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
+        }
 
         header {
             height: 64px; background: var(--panel); border-bottom: 1px solid var(--border);
             display: flex; align-items: center; justify-content: space-between; padding: 0 32px; z-index: 100;
+            backdrop-filter: blur(12px);
         }
 
         .app-container { display: flex; flex: 1; overflow: hidden; }
 
-        /* Sidebar */
-        .sidebar { width: 320px; background: var(--panel); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; }
+        .sidebar { width: 340px; background: var(--panel); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; backdrop-filter: blur(12px); }
+        
         #terminal {
-            flex: 1; background: #000; border-radius: 12px; padding: 16px;
-            font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: #4ade80;
-            overflow-y: auto; margin-top: 15px; border: 1px solid var(--border); line-height: 1.5;
+            flex: 1; background: rgba(0,0,0,0.9); border-radius: 12px; padding: 16px;
+            font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #4ade80;
+            overflow-y: auto; margin-top: 15px; border: 1px solid rgba(56, 189, 248, 0.3);
+            line-height: 1.5;
         }
 
-        /* Main View */
-        .main-view { flex: 1; overflow-y: auto; padding: 40px; position: relative; }
-        .hero { text-align: center; margin: 60px 0; transition: opacity 0.5s; }
+        .main-view { flex: 1; overflow-y: auto; padding: 40px; }
+        .hero { text-align: center; margin: 80px 0; }
 
-        /* Hidden Result Card */
+        /* The Result Card with Glass-morphism */
         .result-card { 
             display: none; background: var(--panel); border: 1px solid var(--border); 
-            border-radius: 24px; overflow: hidden; box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            border-radius: 28px; overflow: hidden; 
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(20px);
+            animation: slideUp 0.5s ease-out;
         }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-        .result-grid { display: grid; grid-template-columns: 420px 1fr; min-height: 550px; }
+        .result-grid { display: grid; grid-template-columns: 480px 1fr; min-height: 600px; }
         .result-text { padding: 40px; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
         
-        /* Technical Data Grid */
         .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
-        .meta-item { background: var(--bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border); }
-        .meta-label { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; margin-bottom: 4px; display: block; }
-        .meta-val { font-size: 0.85rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+        .meta-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
+        .meta-label { font-size: 0.6rem; text-transform: uppercase; color: var(--accent); font-weight: 800; margin-bottom: 4px; display: block; }
+        .meta-val { font-size: 0.9rem; font-weight: 600; font-family: 'JetBrains Mono'; }
 
-        .severity-meter { margin-top: 10px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
-        .severity-bar { height: 100%; width: 0%; transition: 1.5s cubic-bezier(0.1, 0, 0.2, 1); }
+        .severity-meter { margin: 12px 0; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
+        .severity-bar { height: 100%; width: 0%; transition: 1.5s ease; box-shadow: 0 0 10px var(--accent); }
 
-        /* Image Magnify Feature */
         .result-visual { background: #000; position: relative; overflow: hidden; }
-        .result-visual img { 
-            width: 100%; height: 100%; object-fit: cover; opacity: 0.85; 
-            transition: transform 0.6s cubic-bezier(0.33, 1, 0.68, 1); 
-            transform-origin: center;
+        .result-visual img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+
+        /* SIH SPECIAL: GIS Layer Legend */
+        .layer-legend {
+            position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8);
+            padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 0.65rem;
         }
-        .result-visual:hover img { transform: scale(1.5); cursor: crosshair; }
+        .layer-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: #fff; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
 
-        .img-overlay-ui { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        .badge-fixed { position: absolute; top: 20px; left: 20px; background: rgba(0,0,0,0.6); color: white; padding: 6px 12px; border-radius: 6px; font-size: 0.7rem; backdrop-filter: blur(4px); }
-
-        /* UI Buttons & Input */
-        .btn { padding: 14px 24px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-primary { background: var(--accent); color: white; }
-        .footer-input { padding: 30px 40px; background: var(--panel); border-top: 1px solid var(--border); display: flex; gap: 16px; }
-        .input-field { flex: 1; background: var(--bg); border: 2px solid var(--border); padding: 16px 24px; border-radius: 14px; color: var(--text); outline: none; }
+        .btn { padding: 12px 20px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
+        .btn-primary { background: var(--accent); color: #000; }
+        .footer-input { padding: 30px 40px; background: var(--panel); border-top: 1px solid var(--border); display: flex; gap: 16px; backdrop-filter: blur(10px); }
+        .input-field { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 16px; border-radius: 12px; color: #fff; outline: none; }
     </style>
 </head>
-<body data-theme="dark">
+<body>
 
 <header>
-    <div style="font-weight: 800; font-size: 1.25rem;">🏙️ CITYPULSE <span style="font-weight: 300; opacity: 0.5;">ASK THE CITY</span></div>
-    <button onclick="toggleTheme()" class="btn" style="background: var(--bg); color: var(--text); border: 1px solid var(--border); padding: 8px 16px;">🌓 Theme</button>
+    <div style="font-weight: 800;">🏙️ CITYPULSE <span style="font-weight: 300; color: var(--accent);">NATIONAL AI HUB</span></div>
+    <div style="font-size: 0.7rem; background: var(--success); color: #000; padding: 4px 10px; border-radius: 20px; font-weight: 800;">LIVE CONNECT: SENTINEL-2B</div>
 </header>
 
 <div class="app-container">
     <aside class="sidebar">
-        <h4 style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Analysis Stream</h4>
-        <div id="terminal">> KERNEL_IDLE...</div>
+        <h4 style="font-size: 0.7rem; color: var(--accent); text-transform: uppercase;">Inference Thought-Stream</h4>
+        <div id="terminal">> AWAITING_QUERY...</div>
         
         <div style="margin-top: 30px;">
-            <h4 style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 12px;">Saved Snapshots</h4>
-            <button class="btn" style="width:100%; font-size:0.8rem; background:var(--bg); color:var(--text); margin-bottom:8px;" onclick="fillSearch('Analyze Lake Boundary')">🌊 Hebbal Lake Encroachment</button>
-            <button class="btn" style="width:100%; font-size:0.8rem; background:var(--bg); color:var(--text);" onclick="fillSearch('Ward 4 Encroachment')">🏗️ Ward 4 Case</button>
+            <h4 style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 10px;">PRE-SET POLICY AUDITS</h4>
+            <button class="btn" style="width:100%; background:rgba(255,255,255,0.05); color:#fff; margin-bottom:8px; text-align:left; border:1px solid var(--border);" onclick="fillSearch('Show unsafe school zones within 500 m of highways')">🏫 School Safety Audit</button>
+            <button class="btn" style="width:100%; background:rgba(255,255,255,0.05); color:#fff; margin-bottom:8px; text-align:left; border:1px solid var(--border);" onclick="fillSearch('Where should we add EV charging stations?')">⚡ EV Grid Plan</button>
+            <button class="btn" style="width:100%; background:rgba(255,255,255,0.05); color:#fff; text-align:left; border:1px solid var(--border);" onclick="fillSearch('Which wards will face flooding in 2030?')">🌊 2030 Flood Forecast</button>
         </div>
     </aside>
 
     <main class="main-view">
         <div id="hero" class="hero">
-            <h1>Geospatial <span style="color: var(--accent);">Verification.</span></h1>
-            <p style="color: var(--text-muted); margin-top: 15px;">Verify urban development against official records using 10m-resolution spectral analysis.</p>
+            <h1 style="font-size: 3rem; letter-spacing: -1px;">Chat with your <span style="color: var(--accent);">City.</span></h1>
+            <p style="color: var(--text-muted); margin-top: 15px;">Official Decision Support System for Urban Planning and Hazard Mitigation.</p>
         </div>
 
         <div id="result-card" class="result-card">
             <div class="result-grid">
                 <div class="result-text">
-                    <div>
-                        <div style="display: flex; justify-content: space-between;">
-                            <span style="background: rgba(16, 185, 129, 0.1); color: var(--success); padding: 4px 10px; border-radius: 4px; font-size: 0.7rem; font-weight: 800;">LIVE_AUDIT</span>
-                            <span id="case-id" style="font-size: 0.7rem; opacity: 0.6;">REF: #--</span>
-                        </div>
-                        <h2 id="res-title" style="margin-top: 20px;">Analyzing...</h2>
-                        <p id="res-desc" style="color: var(--text-muted); margin-top: 12px; line-height: 1.5; font-size: 0.9rem;"></p>
+                    <div style="display: flex; justify-content: space-between;">
+                        <span id="source-tag" style="font-size: 0.6rem; background: rgba(56, 189, 248, 0.2); color: var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: 800;">DATA: SENTINEL-2 L2A</span>
+                        <span id="case-id" style="font-family: 'JetBrains Mono'; font-size: 0.65rem; opacity: 0.5;"></span>
                     </div>
+                    <h2 id="res-title" style="margin-top: 20px;"></h2>
+                    <p id="res-desc" style="color: var(--text-muted); margin-top: 12px; line-height: 1.5; font-size: 0.9rem;"></p>
 
                     <div class="meta-grid">
-                        <div class="meta-item">
-                            <span class="meta-label">Resolution</span>
-                            <span class="meta-val" id="count-res">0.0m</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label">Spectral ID</span>
-                            <span class="meta-val" id="count-spec">B-0</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label">Cloud Cover</span>
-                            <span class="meta-val" id="count-cloud">0.0%</span>
-                        </div>
-                        <div class="meta-item">
-                            <span class="meta-label">Confidence</span>
-                            <span class="meta-val" id="count-conf">0%</span>
-                        </div>
+                        <div class="meta-item"><span class="meta-label">Confidence</span><span class="meta-val" id="count-conf">0%</span></div>
+                        <div class="meta-item"><span class="meta-label">Last Overpass</span><span class="meta-val" id="last-date">24 Jan 2026</span></div>
+                        <div class="meta-item"><span class="meta-label" id="label-1">Impact</span><span class="meta-val" id="count-res">0</span></div>
+                        <div class="meta-item"><span class="meta-label">Data Engine</span><span class="meta-val">Bhuvan-AI</span></div>
                     </div>
 
-                    <div>
-                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 800; margin-bottom: 5px;">
-                            <span>VIOLATION IMPACT</span>
+                    <div style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 800;">
+                            <span>URGENCY INDEX</span>
                             <span id="severity-label">0%</span>
                         </div>
                         <div class="severity-meter"><div id="severity-bar" class="severity-bar"></div></div>
                     </div>
 
                     <div style="margin-top: auto; display: flex; gap: 10px;">
-                        <button class="btn btn-primary" style="flex: 1;">🚨 File Notice</button>
-                        <button class="btn" style="background: var(--bg); color: var(--text); border:1px solid var(--border);">📥 Save Kit</button>
+                        <button class="btn btn-primary" style="flex: 1;" onclick="routeMemo()">📤 Forward to Dept.</button>
+                        <button class="btn" style="background: rgba(255,255,255,0.05); color:#fff; border:1px solid var(--border);" onclick="alert('Raw GIS GeoJSON data exported for ArcGIS/QGIS.')">📂 Export Layers</button>
                     </div>
                 </div>
                 <div class="result-visual">
                     <img id="res-img" src="">
-                    <div class="img-overlay-ui">
-                        <div class="badge-fixed">SENSOR: SENTINEL-2B</div>
-                        <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 8px; font-size: 0.6rem;">
-                            (SCROLL TO MAGNIFY)
-                        </div>
+                    <div class="layer-legend">
+                        <div style="font-weight: 800; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;">ACTIVE GIS LAYERS</div>
+                        <div class="layer-item"><div class="dot" style="background: var(--accent);"></div> Satellite (True Color)</div>
+                        <div class="layer-item"><div class="dot" style="background: var(--danger);"></div> Buffer (500m Zone)</div>
+                        <div class="layer-item"><div class="dot" style="background: var(--success);"></div> Points of Interest</div>
                     </div>
                 </div>
             </div>
@@ -158,27 +148,33 @@
 </div>
 
 <div class="footer-input">
-    <input type="text" id="query-input" class="input-field" placeholder="Search a location (e.g., 'Analyze Hebbal Lake')...">
-    <button class="btn btn-primary" style="padding: 16px 32px;" onclick="executeAnalysis()">Execute</button>
+    <input type="text" id="query-input" class="input-field" placeholder="Search by policy question or ward ID...">
+    <button class="btn btn-primary" onclick="executeAnalysis()">Analyze Insight</button>
 </div>
 
 <script>
     const dataset = {
-        lake: {
-            title: "Hydrological Encroachment: Hebbal",
-            desc: "Detected unauthorized concrete pouring within the lake buffer zone. NDWI indices show a loss of 0.3 hectares of water surface area.",
-            img: "https://www.researchgate.net/publication/344893963/figure/fig2/AS:951084105363457@1603767529932/Satellite-images-from-Google-Earth-showing-active-encroachment-on-Inkaterra-Reserva.jpg",
-            res: 10, cloud: 0.4, conf: 98, sev: 85, spec: "B8", color: "#ef4444"
+        school: {
+            title: "School Safety Buffer Audit",
+            desc: "Semantic overlay shows 14 schools intersecting with a 500m highway buffer. NDWI indices exclude water-logging risks. Recommendation: Speed-cameras required in Wards 4 & 7.",
+            img: "https://images.unsplash.com/photo-1594154991131-314138e6639d?q=80&w=2000",
+            res: 500, conf: 98, sev: 85, l1: "Buffer Radius", src: "SENTINEL-2 + OSM", dept: "Traffic Police Dept."
         },
-        construction: {
-            title: "Ward 4: Building Audit",
-            desc: "Identified 4 new building footprints absent from 2024 municipal records. Site verification required for unauthorized expansion.",
-            img: "https://www.l3harris.com/sites/default/files/styles/896_x_506/public/2023-09/sas_geospatial_high-res_jeju6.jpg?h=f6dad6f1&itok=3TBemXaT",
-            res: 10, cloud: 1.2, conf: 94, sev: 45, spec: "B4", color: "#f59e0b"
+        ev: {
+            title: "EV Infrastructure Optimization",
+            desc: "AI processed night-light economic activity + residential density. Cluster analysis identifies Sector 4 as the optimal ROI for a 50kW Rapid DC Charger.",
+            img: "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?q=80&w=2000",
+            res: 2, conf: 94, sev: 30, l1: "Dist. to Grid", src: "BHUVAN + ENERGY GRID", dept: "Energy Ministry"
+        },
+        flood: {
+            title: "2030 Inundation Forecast",
+            desc: "Predictive modeling based on LiDAR height-maps. Ward 12 drainage systems will be 40% undersized for 2030 rainfall projections.",
+            img: "https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=2000",
+            res: 12, conf: 89, sev: 75, l1: "At-Risk Wards", src: "LIDAR + ISRO CLIMATE", dept: "Municipal Admin (BBMP)"
         }
     };
 
-    function toggleTheme() { document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark'; }
+    let currentDept = "";
 
     function log(msg) {
         const t = document.getElementById('terminal');
@@ -190,58 +186,58 @@
         let obj = document.getElementById(id);
         let current = start;
         let range = end - start;
-        let increment = end > start ? 1 : -1;
-        let stepTime = Math.abs(Math.floor(duration / range));
-        let timer = setInterval(function() {
+        let increment = end > start ? Math.ceil(range/20) : Math.floor(range/20);
+        let timer = setInterval(() => {
             current += increment;
-            obj.innerText = current + suffix;
-            if (current == end) clearInterval(timer);
-        }, stepTime);
+            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                obj.innerText = end + suffix; clearInterval(timer);
+            } else { obj.innerText = Math.floor(current) + suffix; }
+        }, 40);
     }
 
     function executeAnalysis() {
         const q = document.getElementById('query-input').value.toLowerCase();
         if(!q) return;
-
-        // Reset and Load
-        document.getElementById('hero').style.opacity = '0';
+        document.getElementById('hero').style.display = 'none';
         document.getElementById('result-card').style.display = 'none';
-        log("INITIALIZING SCAN...");
-
-        setTimeout(() => log("FETCHING ORBITAL TILE..."), 600);
-        setTimeout(() => log("COMPUTING SPECTRAL INDICES..."), 1200);
+        
+        log("USER_ID_04: Requesting " + q);
+        setTimeout(() => log("PULLING SPECTRAL TILES FROM BHUVAN..."), 500);
+        setTimeout(() => log("OVERLAYING TOPOGRAPHIC LAYERS..."), 1200);
 
         setTimeout(() => {
-            const entry = q.includes('lake') ? dataset.lake : dataset.construction;
-            document.getElementById('hero').style.display = 'none';
+            let entry = q.includes('school') ? dataset.school : (q.includes('ev') ? dataset.ev : dataset.flood);
+            currentDept = entry.dept;
             document.getElementById('result-card').style.display = 'block';
-            
-            // Text Content
             document.getElementById('res-title').innerText = entry.title;
             document.getElementById('res-desc').innerText = entry.desc;
             document.getElementById('res-img').src = entry.img;
-            document.getElementById('case-id').innerText = "REF: #BENG-2026-" + Math.floor(Math.random()*900);
+            document.getElementById('source-tag').innerText = "SOURCE: " + entry.src;
+            document.getElementById('label-1').innerText = entry.l1;
+            document.getElementById('case-id').innerText = "SID-" + Math.floor(Math.random()*90000);
 
-            // Trigger Count Animations
-            animateValue("count-res", 0, entry.res, 500, "m");
-            animateValue("count-cloud", 0, Math.ceil(entry.cloud), 500, "%");
+            animateValue("count-res", 0, entry.res, 500, q.includes('ev') ? "km" : "m");
             animateValue("count-conf", 0, entry.conf, 500, "%");
-            document.getElementById('count-spec').innerText = entry.spec;
-
-            // Trigger Bar and Label
+            
             setTimeout(() => {
                 document.getElementById('severity-bar').style.width = entry.sev + "%";
-                document.getElementById('severity-bar').style.background = entry.color;
+                document.getElementById('severity-bar').style.background = (entry.sev > 70) ? 'var(--danger)' : 'var(--accent)';
                 animateValue("severity-label", 0, entry.sev, 800, "%");
             }, 100);
-
-            log("ANALYSIS COMPLETE. VISUALIZING.");
+            log("ANALYSIS READY FOR REVIEW.");
         }, 1800);
     }
 
-    function fillSearch(val) {
-        document.getElementById('query-input').value = val;
+    function routeMemo() {
+        log("COMPILING POLICY MEMO...");
+        setTimeout(() => {
+            log("MEMO SECURELY FORWARDED TO: " + currentDept);
+            alert("Strategic Memo and GIS Layers successfully routed to the " + currentDept);
+        }, 1200);
     }
+
+    function fillSearch(val) { document.getElementById('query-input').value = val; }
+    function toggleTheme() { alert("High-Contrast Command Mode Active."); }
 </script>
 </body>
 </html>
