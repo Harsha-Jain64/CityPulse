@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CityPulse | Delhi Command Hub</title>
+    <style>
+        :root {
+            --bg-body: #f1f5f9; --bg-card: #ffffff; --bg-sidebar: #0f172a;
+            --text-main: #0f172a; --text-muted: #64748b; --border: #e2e8f0;
+            --accent: #2563eb; --status-ok: #10b981; --status-warn: #f59e0b;
+            --glass: rgba(255, 255, 255, 0.8);
+        }
+        [data-theme="dark"] {
+            --bg-body: #020617; --bg-card: #0f172a; --bg-sidebar: #020617;
+            --text-main: #f8fafc; --text-muted: #94a3b8; --border: #1e293b; --accent: #38bdf8;
+            --glass: rgba(15, 23, 42, 0.7);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: all 0.2s ease; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); height: 100vh; display: flex; overflow: hidden; }
+
+        /* --- Fixed Sidebar --- */
+        aside { width: 260px; background: var(--bg-sidebar); display: flex; flex-direction: column; padding: 32px 0; border-right: 1px solid var(--border); z-index: 20; flex-shrink: 0; }
+        .brand { padding: 0 32px 40px; font-weight: 900; color: var(--accent); font-size: 1.2rem; letter-spacing: -1px; text-transform: uppercase; }
+        .nav-link { padding: 16px 32px; cursor: pointer; color: #94a3b8; font-size: 0.9rem; font-weight: 500; display: flex; align-items: center; gap: 14px; }
+        .nav-link.active { color: white; background: linear-gradient(90deg, rgba(37,99,235,0.1) 0%, transparent 100%); border-right: 4px solid var(--accent); }
+
+        /* --- Scrollable Main Content --- */
+        main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; overflow-x: hidden; position: relative; }
+        header { height: 72px; background: var(--glass); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 48px; position: sticky; top: 0; z-index: 100; flex-shrink: 0; }
+        .view-content { padding: 40px 48px; max-width: 1600px; margin: 0 auto; width: 100%; min-height: 120vh; /* Ensures scrollability */ }
+
+        /* --- Components --- */
+        .status-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 32px; }
+        .op-card { background: var(--bg-card); padding: 24px; border-radius: 20px; border: 1px solid var(--border); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05); }
+        .op-card h4 { font-size: 0.65rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 10px; letter-spacing: 1px; font-weight: 700; }
+        .op-card .value { font-size: 1.8rem; font-weight: 800; display: flex; align-items: center; gap: 10px; }
+
+        .hero-grid { display: grid; grid-template-columns: 2.2fr 1fr; gap: 24px; margin-bottom: 40px; }
+        .map-container { height: 450px; border-radius: 24px; background: url('https://static.vecteezy.com/system/resources/thumbnails/024/724/838/original/satellite-delhi-map-zoom-background-spinning-around-india-city-air-footage-seamless-panorama-rotating-over-downtown-backdrop-video.jpg') center/cover; position: relative; border: 1px solid var(--border); }
+        .terminal { background: #020617; border-radius: 24px; padding: 24px; font-family: 'JetBrains Mono', monospace; border: 1px solid var(--border); height: 450px; display: flex; flex-direction: column; }
+        #log-stream { overflow-y: hidden; font-size: 0.75rem; color: #38bdf8; }
+
+        .launcher-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-top: 20px; }
+        .launcher { background: var(--bg-card); padding: 32px; border-radius: 24px; border: 1px solid var(--border); cursor: pointer; }
+        .launcher:hover { transform: translateY(-8px); border-color: var(--accent); }
+
+        /* --- Animations --- */
+        .progress-ring { width: 44px; height: 44px; transform: rotate(-90deg); }
+        .progress-ring circle { fill: none; stroke-width: 4; stroke-linecap: round; transition: stroke-dashoffset 2s ease-out; }
+        .pulse-dot { width: 14px; height: 14px; background: #ef4444; border-radius: 50%; position: absolute; border: 2px solid white; box-shadow: 0 0 15px #ef4444; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 70% { transform: scale(3); opacity: 0; } 100% { transform: scale(1); opacity: 0; } }
+
+        /* --- Scan Overlay --- */
+        #scan-overlay { display: none; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.6); backdrop-filter: blur(8px); z-index: 9999; align-items: center; justify-content: center; }
+        .scan-line { width: 100%; height: 3px; background: var(--accent); position: absolute; top: 0; animation: scanLineMove 1.5s linear infinite; box-shadow: 0 0 20px var(--accent); }
+        @keyframes scanLineMove { 0% { top: 0%; opacity: 0; } 50% { opacity: 1; } 100% { top: 100%; opacity: 0; } }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div id="scan-overlay">
+        <div class="scan-line"></div>
+        <div style="background: var(--bg-card); padding: 30px; border-radius: 24px; border: 1px solid var(--accent); text-align: center; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);">
+            <p style="font-size: 0.7rem; font-weight: 800; color: var(--accent); letter-spacing: 3px;">SIGNAL LOCK ACQUIRED</p>
+            <p id="scanning-district" style="font-size: 1.1rem; font-weight: 700; margin-top: 10px;">Registering District Data...</p>
+        </div>
+    </div>
+
+    <aside>
+        <div class="brand">CityPulse</div>
+        <div class="nav-link active" onclick="navigate('dashboard')">📊 <span>Operational Hub</span></div>
+        <div class="nav-link" onclick="navigate('truth-engine')">🛰️ <span>Truth Engine</span></div>
+        <div class="nav-link" onclick="window.location.href='policylab.html'">🏗️ <span>Policy Impact Simulator</span></div>
+        <div class="nav-link" onclick="window.location.href='ASK_THE_CITY.html'">💬 <span>Ask The City</span></div>
+        
+</div>
+    </aside>
+
+    <main>
+        <header>
+            <div id="breadcrumb" style="font-weight: 700; font-size: 0.8rem; color: var(--text-muted); letter-spacing: 1px;">DELHI // COMMAND</div>
+            
+            <div style="display: flex; gap: 16px; align-items: center;">
+                <select id="district-select" onchange="registerDistrictChange()" style="background: var(--bg-card); border: 1px solid var(--border); color: var(--text-main); padding: 10px 16px; border-radius: 12px; font-size: 0.8rem; font-weight: 600; outline: none;">
+                    <option value="central">Central Delhi</option>
+                    <option value="north">North Delhi</option>
+                    <option value="south">South Delhi</option>
+                    <option value="west">West Delhi</option>
+                    <option value="east">East Delhi</option>
+                    <option value="dwarka">Dwarka Sub-City</option>
+                </select>
+                <button class="nav-link" style="border: 1px solid var(--border); border-radius: 12px; height: 44px; width: 44px; justify-content: center; padding: 0; background: var(--bg-card);" onclick="toggleTheme()">🌓</button>
+            </div>
+        </header>
+
+        <div class="view-content">
+            <div id="dashboard" class="view">
+                <div class="status-strip">
+                    <div class="op-card">
+                        <h4>Citizen Trust Index</h4>
+                        <div class="value">
+                            <svg class="progress-ring"><circle stroke="var(--border)" r="18" cx="22" cy="22"/><circle id="ring-trust" stroke="var(--status-ok)" r="18" cx="22" cy="22" stroke-dasharray="113" stroke-dashoffset="113"/></svg>
+                            <span class="counter" data-target="85">0</span>%
+                        </div>
+                    </div>
+                    <div class="op-card">
+                        <h4>Speed to Truth</h4>
+                        <div class="value"><span class="counter" data-target="1.4">0</span>s</div>
+                    </div>
+                    <div class="op-card">
+                        <h4>AI Certainty</h4>
+                        <div class="value"><span class="counter" data-target="98.2">0</span>%</div>
+                    </div>
+                    <div class="op-card">
+                        <h4>Spatial Anomalies</h4>
+                        <div class="value" style="color: #ef4444;"><span class="counter" data-target="12">0</span></div>
+                    </div>
+                </div>
+
+                <div class="hero-grid">
+                    <div class="map-container">
+                        <div style="position: absolute; inset: 0; background: radial-gradient(circle, transparent 10%, rgba(2,6,23,0.7) 100%);"></div>
+                        <div class="pulse-dot" style="top: 35%; left: 45%;"></div>
+                        <div class="pulse-dot" style="top: 65%; left: 35%;"></div>
+                        <div style="position: absolute; top: 24px; left: 24px; background: var(--glass); backdrop-filter: blur(8px); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border);">
+                            <p style="font-size: 0.6rem; font-weight: 800; color: var(--accent);">ORBITAL SURVEILLANCE</p>
+                            <p style="font-size: 0.8rem; font-weight: 700;">Multi-Spectral Ground Track: Delhi NCR</p>
+                        </div>
+                    </div>
+                    <div class="terminal">
+                        <div style="color: #64748b; font-size: 0.65rem; font-weight: 800; margin-bottom: 15px;">&gt; LIVE_GEOSPATIAL_FEED</div>
+                        <div id="log-stream"></div>
+                    </div>
+                </div>
+
+                <h2 style="margin-bottom: 30px; font-weight: 800;">Operational Modules</h2>
+                <div class="launcher-grid">
+                    <div class="launcher" onclick="navigate('truth-engine')">
+                        <h3>Truth Engine</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Temporal analysis of urban growth vs official records.</p>
+                    </div>
+                    <div class="launcher" onclick="window.location.href='policylab.html'">
+                        <h3>Policy Impact Simulator</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">Projecting urban canopy shifts and traffic density.</p>
+                    </div>
+                    <div class="launcher" onclick="window.location.href='ASK_THE_CITY.html'">
+                        <h3>Ask The City</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem;">LLM-powered spatial data extraction.</p>
+                    </div>
+                </div>
+            </div>
+            <div id="truth-engine" class="view" style="display:none;"></div>
+            <div id="simulator" class="view" style="display:none;"></div>
+            <div id="ask" class="view" style="display:none;"></div>
+        </div>
+    </main>
+
+    <script>
+        function animateDashboard() {
+            document.querySelectorAll('.counter').forEach(counter => {
+                const target = +counter.getAttribute('data-target');
+                let count = 0;
+                const update = () => {
+                    const inc = target / 100;
+                    if(count < target) {
+                        count += inc;
+                        counter.innerText = count.toFixed(target % 1 === 0 ? 0 : 1);
+                        requestAnimationFrame(update);
+                    } else counter.innerText = target;
+                };
+                update();
+            });
+            const ring = document.getElementById('ring-trust');
+            ring.style.strokeDashoffset = "113";
+            setTimeout(() => { ring.style.strokeDashoffset = "17"; }, 100);
+        }
+
+        function registerDistrictChange() {
+            const overlay = document.getElementById('scan-overlay');
+            const district = document.getElementById('district-select').options[document.getElementById('district-select').selectedIndex].text;
+            document.getElementById('scanning-district').innerText = `Re-calibrating for ${district}...`;
+            overlay.style.display = 'flex';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                animateDashboard();
+                const entry = document.createElement('div');
+                entry.innerHTML = `<span style="color: var(--accent);">[SYSTEM]</span> District synced: ${district}`;
+                document.getElementById('log-stream').prepend(entry);
+            }, 1600);
+        }
+
+        const logs = ["Sentinel-2 Sync OK", "NDVI Mask Processed", "Anomaly #221 Identified", "Trust Score Recalibrated", "Permit DB Linked"];
+        let logIdx = 0;
+        function addLog() {
+            const stream = document.getElementById('log-stream');
+            const entry = document.createElement('div');
+            entry.style.marginBottom = "8px";
+            entry.innerHTML = `<span style="color: #64748b;">[${new Date().toLocaleTimeString()}]</span> ${logs[logIdx]}`;
+            stream.prepend(entry);
+            logIdx = (logIdx + 1) % logs.length;
+            if(stream.children.length > 15) stream.lastChild.remove();
+        }
+
+        window.onload = () => { animateDashboard(); setInterval(addLog, 2500); };
+        function toggleTheme() { document.body.dataset.theme = document.body.dataset.theme === 'dark' ? 'light' : 'dark'; }
+        function navigate(id) {
+            document.querySelectorAll('.view').forEach(v => v.style.display = 'none');
+            document.getElementById(id).style.display = 'block';
+            document.getElementById('breadcrumb').innerText = `DELHI // ${id.toUpperCase()}`;
+        }
+    </script>
+</body>
+</html>
