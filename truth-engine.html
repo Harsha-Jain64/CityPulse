@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Truth Engine | Integrated Forensic Lab</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #020617; --card: #0f172a; --accent: #38bdf8;
+            --text: #f8fafc; --muted: #94a3b8; --border: #1e293b;
+            --danger: #ef4444; --success: #22c55e; --glass: rgba(15, 23, 42, 0.8);
+        }
+
+        [data-theme="light"] {
+            --bg: #f8fafc; --card: #ffffff; --accent: #2563eb;
+            --text: #0f172a; --muted: #64748b; --border: #e2e8f0;
+            --glass: rgba(255, 255, 255, 0.8);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; transition: background 0.3s, color 0.3s; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); padding: 20px 40px; overflow-x: hidden; }
+        
+        .container { max-width: 1400px; margin: 0 auto; }
+
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
+        .theme-btn { background: var(--card); border: 1px solid var(--border); padding: 8px 12px; border-radius: 10px; cursor: pointer; color: var(--text); font-size: 1.2rem; }
+
+        /* SEARCH AREA */
+        .query-card { 
+            background: var(--glass); backdrop-filter: blur(12px); border: 1px solid var(--border);
+            padding: 24px; border-radius: 20px; display: grid; grid-template-columns: 2fr 1fr 1fr auto;
+            gap: 15px; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-group label { font-size: 0.65rem; font-weight: 800; color: var(--accent); text-transform: uppercase; }
+        .input-group input, .input-group select { 
+            background: var(--bg); border: 1px solid var(--border); color: var(--text); 
+            padding: 12px; border-radius: 10px; outline: none;
+        }
+
+        /* MAIN GRID */
+        .engine-grid { display: grid; grid-template-columns: 1fr 380px; gap: 30px; }
+
+        /* VIEWER */
+        .viewer-box { 
+            position: relative; height: 580px; border-radius: 24px; overflow: hidden;
+            border: 2px dashed var(--border); background: var(--card);
+            display: flex; align-items: center; justify-content: center;
+        }
+        #viewer-content { display: none; width: 100%; height: 100%; position: relative; }
+        .image-layer { position: absolute; inset: 0; background-size: cover; background-position: center; }
+        #after-image { width: 50%; z-index: 2; border-right: 2px solid var(--accent); }
+        .comparison-slider { position: absolute; inset: 0; appearance: none; background: transparent; z-index: 10; cursor: ew-resize; outline: none; }
+
+        /* HEATMAP */
+        .heatmap-active #after-image { width: 100% !important; border: none; mix-blend-mode: difference; filter: brightness(2) saturate(2) hue-rotate(180deg); }
+
+        /* SIDE PANEL */
+        .side-panel { display: flex; flex-direction: column; gap: 20px; }
+        .stat-card { background: var(--card); padding: 18px; border-radius: 20px; border: 1px solid var(--border); }
+        
+        /* CITIZEN SECTION (SUBTLE INTEGRATION) */
+        .citizen-tag { font-size: 0.6rem; background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: 700; }
+        .complaint-item { font-size: 0.75rem; padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+        .complaint-item:hover { color: var(--accent); }
+
+        /* SPECTRAL BARS */
+        .bar-container { display: flex; align-items: flex-end; gap: 4px; height: 40px; margin: 10px 0; }
+        .bar { flex: 1; background: var(--accent); border-radius: 2px; transition: 0.2s; }
+
+        /* VAULT OVERLAY */
+        #blockchain-vault {
+            display: none; position: fixed; inset: 0; background: rgba(2, 6, 23, 0.95);
+            z-index: 1000; align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+        .vault-card { width: 450px; background: var(--card); border: 1px solid var(--success); padding: 40px; border-radius: 24px; text-align: center; }
+
+        .btn-prime { background: var(--accent); color: #000; border: none; padding: 15px 30px; border-radius: 12px; font-weight: 800; cursor: pointer; }
+        .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); padding: 10px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 0.7rem; margin-top: 10px; }
+        #scan-line { position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--accent); display: none; z-index: 25; }
+
+        .viewer-hud {
+            position: absolute; top: 15px; left: 15px; z-index: 15;
+            background: rgba(0,0,0,0.7); padding: 8px 12px; border-radius: 8px;
+            font-family: 'JetBrains Mono'; font-size: 0.6rem; color: #fff;
+            pointer-events: none; border: 1px solid rgba(255,255,255,0.1);
+        }
+        .hud-label { color: var(--accent); font-weight: 800; }
+    </style>
+</head>
+<body data-theme="dark">
+
+<div class="container">
+    <header>
+        <div>
+            <h1 style="font-weight: 900; font-size: 2rem;">TRUTH<span style="color: var(--accent)">ENGINE</span></h1>
+            <p style="color: var(--muted); font-size: 0.8rem;">Multi-Spectral Satellite Audit & Hybrid Verification</p>
+        </div>
+        <button class="theme-btn" onclick="toggleTheme()">🌓</button>
+    </header>
+
+    <div class="query-card">
+        <div class="input-group">
+            <label>Geospatial Target</label>
+            <input type="text" id="target" placeholder="Enter Ward, Khasra or Coordinate...">
+        </div>
+        <div class="input-group">
+            <label>Baseline (Before)</label>
+            <select><option>Jan 2024 (Sentinel-2)</option></select>
+        </div>
+        <div class="input-group">
+            <label>Audit (Current)</label>
+            <select><option>Live 2026 Feed</option></select>
+        </div>
+        <button class="btn-prime" onclick="runForensics()">RUN AUDIT</button>
+    </div>
+
+    <div class="engine-grid">
+        <div class="viewer-box" id="main-viewer" onmousemove="animateBars(event)">
+            <div id="placeholder" style="text-align: center; color: var(--muted);">
+                <p style="font-size: 2.5rem; margin-bottom: 10px;">🛰️</p>
+                <p style="font-family: 'JetBrains Mono'; font-size: 0.8rem;">SYSTEM IDLE. INITIATE AUDIT TO CAPTURE RASTER TILES.</p>
+            </div>
+            
+            <div id="viewer-content">
+                <div class="viewer-hud" id="viewer-hud" style="display:none;">
+                    <div><span class="hud-label">SAT:</span> SENTINEL-2B</div>
+                    <div><span class="hud-label">RES:</span> 10m/px</div>
+                    <div><span class="hud-label">BASE:</span> JAN 2024 (0.2% Cloud)</div>
+                    <div><span class="hud-label">AUDIT:</span> JAN 2026 (0.1% Cloud)</div>
+                </div>
+                <div id="scan-line"></div>
+                <div class="image-layer" style="background-image: url('https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?q=80&w=2000');"></div>
+                <div id="after-image" class="image-layer" style="background-image: url('https://images.unsplash.com/photo-1449824913935-59a10b8d2000?q=80&w=2000');"></div>
+                <input type="range" min="0" max="100" value="50" class="comparison-slider" oninput="document.getElementById('after-image').style.width = this.value + '%'">
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div class="stat-card">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <h4 style="font-size: 0.7rem; color: var(--accent); letter-spacing: 1px;">CITIZEN SIGNALS</h4>
+                    <span class="citizen-tag">LIVE REPORTS</span>
+                </div>
+                <div class="complaint-item" onclick="document.getElementById('target').value='Sector 44 Park'">
+                    📍 <strong>Sector 44:</strong> Reported illegal construction on green belt.
+                </div>
+                <div class="complaint-item" onclick="document.getElementById('target').value='Ward 12 Wetland'">
+                    📍 <strong>Ward 12:</strong> Massive tree felling detected by local.
+                </div>
+            </div>
+
+            <div class="stat-card" style="border-top: 3px solid var(--danger);">
+                <h4 style="font-size: 0.7rem; color: var(--danger); letter-spacing: 1px;">FORENSIC REPORT</h4>
+                <div style="margin-top: 10px; font-size: 0.8rem;">
+                    Official Status: <span id="rec-gov">--</span><br>
+                    AI Detection: <span id="rec-ai" style="font-weight:800;">--</span>
+                </div>
+                <button class="btn-outline" onclick="document.getElementById('main-viewer').classList.toggle('heatmap-active')">TOGGLE HEATMAP</button>
+            </div>
+
+            <div class="stat-card" onmousemove="animateBars()">
+                <h4 style="font-size: 0.7rem; color: var(--accent); letter-spacing: 1px;">SPECTRAL SIGNATURE</h4>
+                <div class="bar-container">
+                    <div class="bar" style="height: 10%;"></div>
+                    <div class="bar" style="height: 10%;"></div>
+                    <div class="bar" style="height: 10%;"></div>
+                    <div class="bar" style="height: 10%;"></div>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-family:'JetBrains Mono'; font-size:0.5rem; color:var(--muted);">
+                    <span>BLUE</span><span>RED</span><span>NIR</span><span>SWIR</span>
+                </div>
+            </div>
+
+            <button class="btn-prime" style="width: 100%;" onclick="openVault()">🔒 SIGN LEGAL EVIDENCE</button>
+        </div>
+    </div>
+</div>
+
+<div id="blockchain-vault">
+    <div class="vault-card">
+        <h2 style="color: var(--success); margin-bottom: 15px;">EVIDENCE SECURED</h2>
+        <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; font-family: 'JetBrains Mono'; font-size: 0.7rem; color: var(--success); text-align: left; margin-bottom: 20px;">
+            BLOCK_ID: #SIH-9921-X<br>HASH: 0x7E2...890D<br>STATUS: COMMITTED
+        </div>
+        <button class="btn-prime" onclick="location.reload()">NEW AUDIT</button>
+    </div>
+</div>
+
+<script>
+    function toggleTheme() {
+        const body = document.body;
+        body.setAttribute('data-theme', body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    }
+
+    // This stores the "Base" values for the current location
+    let currentBaseValues = [20, 20, 20, 20]; 
+
+    function setRealisticBars(type) {
+        if(type.includes('Wetland')) {
+            currentBaseValues = [70, 20, 10, 5]; // Water Signature
+        } else if (type.includes('Park')) {
+            currentBaseValues = [20, 15, 85, 25]; // Forest Signature
+        } else {
+            currentBaseValues = [50, 75, 35, 80]; // Urban Signature
+        }
+        applyBars(currentBaseValues);
+    }
+
+    function applyBars(values) {
+        const bars = document.querySelectorAll('.bar');
+        bars.forEach((bar, i) => {
+            bar.style.height = values[i] + "%";
+        });
+    }
+
+    // THE FIX: This makes bars move with your mouse again
+    function animateBars(e) {
+        // Only animate if the viewer is actually visible
+        if(document.getElementById('viewer-content').style.display === 'block') {
+            const bars = document.querySelectorAll('.bar');
+            bars.forEach((bar, i) => {
+                // Take the base value and add a small random "pixel jitter"
+                let jitter = (Math.random() * 15) - 7; 
+                let finalValue = Math.max(5, Math.min(95, currentBaseValues[i] + jitter));
+                bar.style.height = finalValue + "%";
+            });
+        }
+    }
+
+    function runForensics() {
+        const target = document.getElementById('target').value;
+        if(!target) return alert("Select a Target Location");
+        
+        document.getElementById('placeholder').style.display = 'none';
+        document.getElementById('viewer-content').style.display = 'block';
+        document.getElementById('viewer-hud').style.display = 'block';
+        document.getElementById('main-viewer').style.borderStyle = 'solid';
+
+        const line = document.getElementById('scan-line');
+        line.style.display = "block";
+        let pos = 0;
+        let itv = setInterval(() => {
+            pos += 2;
+            line.style.left = pos + "%";
+            if(pos >= 100) {
+                clearInterval(itv);
+                line.style.left = "0";
+                line.style.display = "none";
+                
+                document.getElementById('rec-gov').innerText = "Protected Zone";
+                document.getElementById('rec-ai').innerText = "Anomaly Detected (96% Confidence)";
+                
+                setRealisticBars(target); 
+            }
+        }, 30);
+    }
+
+    function openVault() { document.getElementById('blockchain-vault').style.display = 'flex'; }
+</script>
+
+</body>
+</html>
