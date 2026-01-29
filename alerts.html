@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alerts Hub | Urgency Monitor</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --danger: #ef4444; --warning: #f59e0b; --bg: #020617;
+            --surface: #0f172a; --accent: #38bdf8; --text: #f8fafc;
+            --success: #22c55e;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* HEADER TICKER */
+        .alert-banner {
+            background: var(--danger); color: white; padding: 12px;
+            font-weight: 900; text-transform: uppercase; letter-spacing: 2px;
+            display: flex; align-items: center; gap: 20px; box-shadow: 0 4px 20px rgba(239, 68, 68, 0.4);
+        }
+        .ticker-wrap { flex: 1; overflow: hidden; white-space: nowrap; font-family: 'JetBrains Mono'; font-size: 0.85rem; }
+        .ticker { display: inline-block; animation: marquee 25s linear infinite; }
+        @keyframes marquee { from { transform: translateX(100%); } to { transform: translateX(-100%); } }
+
+        /* GRID SYSTEM */
+        .main-grid { display: grid; grid-template-columns: 1fr 480px; gap: 20px; padding: 20px; flex: 1; overflow: hidden; }
+
+        /* LEFT: LIVE COMMAND MAP */
+        .map-container { 
+            background: var(--surface); border: 1px solid #1e293b; border-radius: 16px; 
+            position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center;
+        }
+        .map-overlay {
+            position: absolute; top: 25px; left: 25px; background: rgba(15, 23, 42, 0.9);
+            padding: 20px; border-radius: 12px; border-left: 5px solid var(--danger); backdrop-filter: blur(10px); z-index: 5;
+        }
+        
+        /* DYNAMIC PULSE COLORS */
+        .pulse-circle {
+            position: absolute; width: 120px; height: 120px; border-radius: 50%; animation: pulse 2s infinite; z-index: 3;
+        }
+        .pulse-red { background: rgba(239, 68, 68, 0.2); border: 2px solid var(--danger); }
+        
+        @keyframes pulse { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(2.5); opacity: 0; } }
+
+        /* RIGHT: INCIDENT MANAGEMENT FEED */
+        .alert-sidebar { display: flex; flex-direction: column; gap: 15px; overflow-y: auto; padding-right: 10px; }
+        
+        .alert-card {
+            background: var(--surface); padding: 20px; border-radius: 12px;
+            border: 1px solid #334155; position: relative; transition: all 0.3s ease;
+        }
+
+        /* URGENCY BORDERS */
+        .alert-card.critical { border-left: 6px solid var(--danger); background: linear-gradient(90deg, rgba(239,68,68,0.05) 0%, var(--surface) 100%); }
+        .alert-card.warning { border-left: 6px solid var(--warning); background: linear-gradient(90deg, rgba(245,158,11,0.05) 0%, var(--surface) 100%); }
+        .alert-card.stable { border-left: 6px solid var(--success); background: linear-gradient(90deg, rgba(34,197,94,0.05) 0%, var(--surface) 100%); }
+
+        .status-badge { font-size: 0.6rem; font-weight: 900; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; }
+        .bg-red { background: var(--danger); color: white; }
+        .bg-yellow { background: var(--warning); color: #000; }
+        .bg-green { background: var(--success); color: white; }
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+        .alert-time { font-family: 'JetBrains Mono'; font-size: 0.7rem; color: var(--accent); }
+        
+        .alert-title { font-weight: 800; font-size: 1.1rem; letter-spacing: -0.5px; margin-bottom: 4px; }
+        
+        .evidence-pill { font-size: 0.55rem; background: rgba(56, 189, 248, 0.1); color: var(--accent); padding: 2px 6px; border-radius: 4px; font-weight: 700; margin-bottom: 8px; display: inline-block; border: 1px solid rgba(56, 189, 248, 0.2); }
+
+        .alert-desc { font-size: 0.85rem; color: #94a3b8; line-height: 1.5; margin-bottom: 12px; }
+
+        .tag { font-size: 0.65rem; font-weight: 700; padding: 4px 8px; border-radius: 4px; background: #1e293b; display: flex; align-items: center; gap: 5px; border: 1px solid #334155; }
+
+        .audit-log {
+            margin-top: 10px; padding: 15px; border-radius: 8px; background: rgba(0,0,0,0.3);
+            border: 1px solid #1e293b; font-family: 'JetBrains Mono'; font-size: 0.65rem; color: #64748b; line-height: 1.6;
+        }
+
+        .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 12px; }
+        .btn-action { background: #1e293b; color: white; border: none; padding: 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; cursor: pointer; }
+        .btn-red { background: var(--danger); }
+
+        .scanline { width: 100%; height: 4px; background: rgba(56, 189, 248, 0.1); position: absolute; top: 0; animation: scan 6s linear infinite; z-index: 2; }
+        @keyframes scan { from { top: 0; } to { top: 100%; } }
+    </style>
+</head>
+<body>
+
+    <div class="alert-banner">
+        <span>● COMMAND CENTER LIVE</span>
+        <div class="ticker-wrap">
+            <div class="ticker">
+                [RED ALERT] LIGHTNING STRIKE IMMINENT: DWARKA SECTOR 10 ... [YELLOW ALERT] UNUSUAL THERMAL SIGNATURE DETECTED: OKHLA INDUSTRIAL AREA ... [GREEN] RECOVERY COMPLETE: NAJAFGARH DRAINAGE LEVEL NORMALIZED ...
+            </div>
+        </div>
+    </div>
+
+    <div class="main-grid">
+        <div class="map-container">
+            <div class="scanline"></div>
+            <div class="map-overlay">
+                <div style="font-size: 0.65rem; color: var(--accent); font-weight: 800;">CURRENT FOCUS</div>
+                <div style="font-size: 1.3rem; font-weight: 900; margin: 4px 0;" id="active-zone">DWARKA SECTOR 10</div>
+                <div style="font-size: 0.75rem; color: #94a3b8;">Status: Critical Hazard</div>
+            </div>
+            <div id="map-pulse" class="pulse-circle pulse-red"></div>
+            <img src="https://images.unsplash.com/photo-1524661135-423995f22d0b?q=80&w=2000" style="width:100%; height:100%; object-fit:cover; opacity: 0.2; filter: grayscale(1) invert(1);" alt="Strategic Grid Map">
+        </div>
+
+        <div class="alert-sidebar">
+            
+            <div class="alert-card critical">
+                <div class="card-header">
+                    <span class="status-badge bg-red">Critical / Imminent</span>
+                    <span class="alert-time">18:15:02</span>
+                </div>
+                <div class="alert-title">LIGHTNING STRIKE PREDICTION</div>
+                <span class="evidence-pill">Δ CAPE: 2800 J/kg | RADAR: ACTIVE</span>
+                <p class="alert-desc">High-voltage discharge predicted in Dwarka Public Plaza. Golden hour evacuation required.</p>
+                <div style="display: flex; gap: 8px;">
+                    <div class="tag" style="color:var(--danger)">🚓 1 UNIT (400M)</div>
+                    <div class="tag">✓ IMD SYNC</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-action btn-red">BROADCAST SMS</button>
+                    <button class="btn-action">VIEW RADAR</button>
+                </div>
+            </div>
+
+            <div class="alert-card warning">
+                <div class="card-header">
+                    <span class="status-badge bg-yellow">Warning / Action Pending</span>
+                    <span class="alert-time">18:02:44</span>
+                </div>
+                <div class="alert-title">UNAUTHORIZED EXCAVATION</div>
+                <span class="evidence-pill">Δ BSI: +0.42 | SATELLITE REF: SENT-2</span>
+                <p class="alert-desc">Sudden soil disturbance detected in North-West Mehrauli. Potential illegal construction base.</p>
+                <div style="display: flex; gap: 8px;">
+                    <div class="tag" style="color:var(--warning)">👷 INSPECTOR (2.1KM)</div>
+                    <div class="tag">✓ 3 REPORTS</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-action">SEND NOTICE</button>
+                    <button class="btn-action">SITE ANALYTICS</button>
+                </div>
+            </div>
+
+            <div class="alert-card stable">
+                <div class="card-header">
+                    <span class="status-badge bg-green">Stable / Resolved</span>
+                    <span class="alert-time">17:45:10</span>
+                </div>
+                <div class="alert-title">WATER LEVEL STABILIZED</div>
+                <span class="evidence-pill">SENSOR S-42: 45% CAP | FLOW: NORMAL</span>
+                <p class="alert-desc">Najafgarh drainage pressure has returned to baseline levels after pumping operations.</p>
+                <div style="display: flex; gap: 8px;">
+                    <div class="tag" style="color:var(--success)">✓ PUMP DEACTIVATED</div>
+                    <div class="tag">✓ AUTO-SOLVED</div>
+                </div>
+                <div class="btn-group">
+                    <button class="btn-action">GENERATE LOG</button>
+                    <button class="btn-action">ARCHIVE EVENT</button>
+                </div>
+            </div>
+
+            <div class="audit-log">
+                <div style="margin-bottom: 5px; font-weight: 900; color: #94a3b8; font-size: 0.6rem;">DIGITAL AUDIT TRAIL</div>
+                <div>[18:22] > STATUS_CHANGE: DWARKA_ALARM_PUSHED</div>
+                <div>[18:20] > SENSOR_REPORT: OKHLA_TEMP_NORMAL</div>
+                <div>[18:18] > DB_ENTRY: INCIDENT_8842_CLOSED</div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const zones = ["DWARKA SECTOR 10", "MEHRAULI RIDGE", "NAJAFGARH BASIN"];
+        let currentZone = 0;
+        setInterval(() => {
+            currentZone = (currentZone + 1) % zones.length;
+            document.getElementById('active-zone').innerText = zones[currentZone];
+            const pulse = document.getElementById('map-pulse');
+            pulse.style.top = Math.random() * 60 + 20 + "%";
+            pulse.style.left = Math.random() * 60 + 20 + "%";
+        }, 5000);
+    </script>
+</body>
+</html>
