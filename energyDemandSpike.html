@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Intelligence | Command Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --power-gold: #fbbf24; --danger: #ef4444; --safe: #22c55e;
+            --bg: #030712; --card: #111827; --text: #f8fafc;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; overflow: hidden; }
+
+        /* Left Sidebar */
+        .sidebar { width: 380px; background: var(--card); border-right: 1px solid #1f2937; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
+        .sidebar h2 { font-size: 1rem; border-left: 4px solid var(--power-gold); padding-left: 10px; text-transform: uppercase; margin-bottom: 5px; }
+
+        .control-panel { background: rgba(255,255,255,0.05); padding: 15px; border-radius: 12px; border: 1px dashed #374151; }
+        .control-panel label { font-size: 0.6rem; color: #94a3b8; font-weight: 800; display: block; margin-bottom: 5px; }
+        .input-field { width: 100%; background: #000; border: 1px solid #374151; color: var(--power-gold); padding: 8px; border-radius: 6px; font-family: 'JetBrains Mono'; margin-bottom: 10px; }
+
+        /* EFFICIENCY METER */
+        .eff-container { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; border: 1px solid #1f2937; margin-top: 5px; }
+        .eff-bar-bg { height: 6px; background: #1f2937; border-radius: 3px; margin-top: 10px; overflow: hidden; }
+        .eff-bar-fill { height: 100%; width: 98%; background: var(--safe); transition: 0.5s ease; }
+
+        /* DISTRICT BREAKDOWN TABLE */
+        .district-table { width: 100%; font-size: 0.7rem; border-collapse: collapse; margin-top: 10px; background: rgba(0,0,0,0.2); border-radius: 8px; overflow: hidden; }
+        .district-table th { text-align: left; padding: 8px; color: #64748b; border-bottom: 1px solid #1f2937; }
+        .district-table td { padding: 8px; border-bottom: 1px solid #1f2937; font-family: 'JetBrains Mono'; }
+        .load-indicator { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+
+        .content { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 15px; }
+
+        .thermal-map-container { height: 320px; background: #000; border-radius: 16px; border: 1px solid #374151; position: relative; overflow: hidden; }
+        #satelliteImg { width:100%; height:100%; object-fit:cover; opacity: 0.3; filter: saturate(0) brightness(0.5); transition: 0.5s; }
+        
+        .map-overlay { position: absolute; inset: 0; background: radial-gradient(circle at center, rgba(251, 191, 36, 0.4), transparent); pointer-events: none; opacity: 0; transition: 0.8s; }
+        .map-overlay.active { opacity: 1; background: radial-gradient(circle at center, rgba(239, 68, 68, 0.6), transparent); }
+
+        .status-banner { padding: 12px 20px; border-radius: 12px; display: flex; justify-content: space-between; align-items: center; font-weight: 800; transition: 0.3s; font-size: 0.85rem; }
+        .status-safe { background: rgba(34, 197, 94, 0.1); border: 1px solid var(--safe); color: var(--safe); }
+        .status-danger { background: rgba(239, 68, 68, 0.1); border: 1px solid var(--danger); color: var(--danger); animation: pulse-red 2.2s infinite; }
+        
+        @keyframes pulse-red { 0%, 100% { box-shadow: 0 0 0px var(--danger); } 50% { box-shadow: 0 0 12px var(--danger); } }
+
+        .btn { padding: 12px; border: none; border-radius: 8px; font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 0.7rem; width: 100%; transition: 0.3s; }
+        .btn-gold { background: var(--power-gold); color: #000; }
+        .btn-gold:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .chart-wrapper { background: var(--card); padding: 15px; border-radius: 16px; border: 1px solid #374151; flex: 1; min-height: 240px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Grid Simulation</h2>
+        
+        <div class="control-panel">
+            <label>SIMULATE CURRENT LOAD (MW)</label>
+            <input type="number" id="loadInput" class="input-field" value="6500" oninput="updateSystem()">
+            
+            <label>AMBIENT TEMPERATURE (°C)</label>
+            <input type="number" id="tempInput" class="input-field" value="38" oninput="updateSystem()">
+        </div>
+
+        <div style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: 12px; border: 1px solid #1f2937;">
+            <p style="font-size: 0.6rem; color: #94a3b8; font-weight: 800; margin-bottom: 8px;">SUB-STATION STATUS</p>
+            <table class="district-table">
+                <thead><tr><th>District</th><th>Load</th><th>Status</th></tr></thead>
+                <tbody>
+                    <tr><td>Okhla Ph-III</td><td id="d1-load">72%</td><td><span class="load-indicator" id="d1-dot" style="background:var(--safe)"></span></td></tr>
+                    <tr><td>Rohini Sec-5</td><td id="d2-load">62%</td><td><span class="load-indicator" style="background:var(--safe)"></span></td></tr>
+                    <tr><td>Dwarka Sec-10</td><td id="d3-load">55%</td><td><span class="load-indicator" style="background:var(--safe)"></span></td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="eff-container">
+            <label style="font-size: 0.6rem; color: #94a3b8; font-weight: 800;">SYSTEM EFFICIENCY</label>
+            <div id="effText" style="font-size: 1.4rem; font-family: 'JetBrains Mono'; color: var(--safe); font-weight: 700;">98.2%</div>
+            <div class="eff-bar-bg">
+                <div id="effBar" class="eff-bar-fill"></div>
+            </div>
+        </div>
+
+        <div style="margin-top: auto;">
+            <button id="balanceBtn" class="btn btn-gold" onclick="runBalancer()" disabled>Initiate Load Balancing</button>
+            <button class="btn" style="background:transparent; color:#555; font-size:0.6rem;" onclick="location.reload()">↺ RESET SYSTEM</button>
+        </div>
+    </div>
+
+    <div class="content">
+        <div id="statusBanner" class="status-banner status-safe">
+            <span id="statusText">● SYSTEM STABLE: ALL GRIDS NORMAL</span>
+            <span id="gridAlert">OPTIMIZED VOLTAGE</span>
+        </div>
+
+        <div class="thermal-map-container">
+            <div id="thermalOverlay" class="map-overlay"></div>
+            <div style="position: absolute; top: 15px; left: 15px; font-size: 0.65rem; font-weight: 800; background: rgba(0,0,0,0.8); padding: 5px 10px; border-radius: 4px; border: 1px solid #333;">
+                LIVE THERMAL IR OVERLAY
+            </div>
+             
+            <img id="satelliteImg" src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=2000" alt="Delhi Satellite View">
+            
+            <div style="position: absolute; bottom: 20px; right: 20px; background: rgba(0,0,0,0.8); padding: 10px; border-radius: 8px; font-family: 'JetBrains Mono'; font-size: 0.6rem; border: 1px solid #333;">
+                INTENSITY: <span id="intensityVal" style="color:var(--safe)">NORMAL</span>
+            </div>
+        </div>
+
+        <div class="chart-wrapper">
+            <canvas id="liveChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('liveChart').getContext('2d');
+        let energyChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['12 PM', '1 PM', '2 PM', '3 PM', '4 PM', '5 PM', '6 PM (LIVE)'],
+                datasets: [{
+                    label: 'Grid Load (MW)',
+                    data: [5200, 5800, 6100, 6400, 6900, 7500, 6500],
+                    borderColor: '#fbbf24',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: true,
+                    backgroundColor: 'rgba(251, 191, 36, 0.05)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { min: 4000, max: 10000, grid: { color: '#1f2937' }, ticks: { color: '#64748b' } },
+                    x: { grid: { display: false }, ticks: { color: '#64748b' } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+
+        function updateSystem() {
+            const load = document.getElementById('loadInput').value;
+            const temp = document.getElementById('tempInput').value;
+            const banner = document.getElementById('statusBanner');
+            const overlay = document.getElementById('thermalOverlay');
+            const mapImg = document.getElementById('satelliteImg');
+            const balanceBtn = document.getElementById('balanceBtn');
+            const effBar = document.getElementById('effBar');
+            const effText = document.getElementById('effText');
+
+            // Update Chart
+            energyChart.data.datasets[0].data[6] = load;
+            energyChart.update('none');
+
+            if (load > 8200 || temp > 45) {
+                banner.className = 'status-banner status-danger';
+                document.getElementById('statusText').innerText = "⚠️ ALERT: LOCALIZED THERMAL SPIKE";
+                document.getElementById('gridAlert').innerText = "OKHLA SUB-STATION @ 98% CAP";
+                overlay.className = 'map-overlay active';
+                mapImg.style.filter = "saturate(2.5) brightness(0.8) hue-rotate(-50deg) contrast(1.2)";
+                document.getElementById('intensityVal').innerText = "CRITICAL";
+                document.getElementById('intensityVal').style.color = "var(--danger)";
+                
+                // Update Efficiency
+                effText.innerText = "68.4%";
+                effText.style.color = "var(--danger)";
+                effBar.style.width = "68%";
+                effBar.style.background = "var(--danger)";
+
+                // Update District Table
+                document.getElementById('d1-load').innerText = "98%";
+                document.getElementById('d1-load').style.color = "var(--danger)";
+                document.getElementById('d1-dot').style.background = "var(--danger)";
+                
+                balanceBtn.disabled = false;
+            } else {
+                banner.className = 'status-banner status-safe';
+                document.getElementById('statusText').innerText = "● SYSTEM STABLE: ALL GRIDS NORMAL";
+                document.getElementById('gridAlert').innerText = "OPTIMIZED VOLTAGE";
+                overlay.className = 'map-overlay';
+                mapImg.style.filter = "saturate(0) brightness(0.5)";
+                document.getElementById('intensityVal').innerText = "NORMAL";
+                document.getElementById('intensityVal').style.color = "var(--safe)";
+
+                // Reset Efficiency
+                effText.innerText = "98.2%";
+                effText.style.color = "var(--safe)";
+                effBar.style.width = "98%";
+                effBar.style.background = "var(--safe)";
+
+                document.getElementById('d1-load').innerText = "72%";
+                document.getElementById('d1-load').style.color = "var(--text)";
+                document.getElementById('d1-dot').style.background = "var(--safe)";
+
+                balanceBtn.disabled = true;
+            }
+        }
+
+        function runBalancer() {
+            const btn = document.getElementById('balanceBtn');
+            btn.innerText = "BALANCING GRID...";
+            btn.style.background = "#22c55e";
+
+            setTimeout(() => {
+                document.getElementById('loadInput').value = 7100;
+                updateSystem();
+                alert("Smart-Grid Intervention: Voltage Reduction (CVR) applied to Okhla Ph-III. System Stabilized.");
+                btn.innerText = "INTERVENTION COMPLETE";
+                btn.disabled = true;
+            }, 1800);
+        }
+    </script>
+</body>
+</html>
