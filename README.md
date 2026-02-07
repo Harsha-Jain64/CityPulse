@@ -3,7 +3,7 @@
 <div align="center">
 
 <p align="center">
-  <img src="assets/logo.jpeg" alt="CityPulse Logo" width="150"/>
+  <img src="CityPulse Logo.png" alt="CityPulse Logo" width="150"/>
 </p>
 
 
