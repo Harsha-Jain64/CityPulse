@@ -91,7 +91,7 @@ CityPulse aligns with the **National e-Governance Plan (NeGP)**, focusing on red
 <p align="center">
   <img src="assets/ Citizen_Dash.png" width="800"/>
   <br/>
-  <i>Citizen Dashboard – personalized alerts, complaints, and community engagement</i>
+  <i>Policy Impact Simulator - Predictive Modeling, Risk Assessment, Strategic Forecasting, Decision Validation</i>
 </p>
 
 <br>
@@ -99,7 +99,7 @@ CityPulse aligns with the **National e-Governance Plan (NeGP)**, focusing on red
 <p align="center">
   <img src="assets/PolicyMaker_Dash.png" width="800"/>
   <br/>
-  <i>Policymaker Dashboard – complaint analytics, policy insights, and workforce monitoring</i>
+  <i>Ask The City – Factual Accuracy, Knowledge Synthesis, and Protocol Intelligence</i>
 </p>
 
 
@@ -146,6 +146,7 @@ We welcome contributions to CityPulse! If you have suggestions for improvements 
 -  **Leaflet.js**: For providing the GIS mapping foundation.
 
 <div align="center">
+
 
 **⭐ Star this repo if you find it helpful!**
 
