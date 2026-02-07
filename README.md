@@ -3,7 +3,7 @@
 <div align="center">
 
 <p align="center">
-  <img src="assets/logo.jpeg" alt="JanSetu Logo" width="150"/>
+  <img src="assets/logo.jpeg" alt="CityPulse Logo" width="150"/>
 </p>
 
 
@@ -81,7 +81,7 @@ CityPulse aligns with the **National e-Governance Plan (NeGP)**, focusing on red
 ## 🖥️ Screenshots
 
 <p align="center">
-  <img src="assets/HomePage.png" width="800"/>
+  <img src="assets/main_dash.png" width="800"/>
   <br/>
   <i>Homepage</i>
 </p>
@@ -89,7 +89,7 @@ CityPulse aligns with the **National e-Governance Plan (NeGP)**, focusing on red
 <br>
 
 <p align="center">
-  <img src="assets/ Citizen_Dash.png" width="800"/>
+  <img src="assets/policy_impact.png" width="800"/>
   <br/>
   <i>Policy Impact Simulator - Predictive Modeling, Risk Assessment, Strategic Forecasting, Decision Validation</i>
 </p>
@@ -97,7 +97,7 @@ CityPulse aligns with the **National e-Governance Plan (NeGP)**, focusing on red
 <br>
 
 <p align="center">
-  <img src="assets/PolicyMaker_Dash.png" width="800"/>
+  <img src="assets/ask_city.png" width="800"/>
   <br/>
   <i>Ask The City – Factual Accuracy, Knowledge Synthesis, and Protocol Intelligence</i>
 </p>
