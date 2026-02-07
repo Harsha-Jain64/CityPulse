@@ -3,241 +3,185 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CityPulse | National Intelligence Hub</title>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Inter:wght@400;500;600;800&display=swap" rel="stylesheet">
+    <title>CityPulse | Ask the City Intelligence Hub</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
     <style>
-        :root {
-            --bg: #020617; --panel: rgba(15, 23, 42, 0.8); --text: #f1f5f9; --text-muted: #94a3b8;
-            --accent: #38bdf8; --border: rgba(30, 41, 59, 0.7); --success: #4ade80; --danger: #f87171; --warning: #fbbf24;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { 
-            background: var(--bg); 
-            background-image: radial-gradient(circle at 2px 2px, var(--border) 1px, transparent 0);
-            background-size: 30px 30px;
-            color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; 
-        }
-
-        header {
-            height: 64px; background: var(--panel); border-bottom: 1px solid var(--border);
-            display: flex; align-items: center; justify-content: space-between; padding: 0 32px; z-index: 100;
-            backdrop-filter: blur(12px);
-        }
-
-        .app-container { display: flex; flex: 1; overflow: hidden; }
-
-        .sidebar { width: 340px; background: var(--panel); border-right: 1px solid var(--border); padding: 24px; display: flex; flex-direction: column; backdrop-filter: blur(12px); }
+        :root { --accent: #38bdf8; --bg: #0f172a; --panel: #1e293b; --text: #94a3b8; --danger: #ef4444; --success: #22c55e; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; margin: 0; background: var(--bg); color: white; overflow: hidden; }
         
-        #terminal {
-            flex: 1; background: rgba(0,0,0,0.9); border-radius: 12px; padding: 16px;
-            font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: #4ade80;
-            overflow-y: auto; margin-top: 15px; border: 1px solid rgba(56, 189, 248, 0.3);
-            line-height: 1.5;
-        }
+        .master-container { display: flex; height: 100vh; padding: 20px; gap: 20px; box-sizing: border-box; }
 
-        .main-view { flex: 1; overflow-y: auto; padding: 40px; }
-        .hero { text-align: center; margin: 80px 0; }
+        /* Left Panel: Chat & Intelligence */
+        .sidebar { width: 480px; background: var(--panel); border-radius: 16px; padding: 25px; display: flex; flex-direction: column; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); }
+        h2 { margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+        .live-tag { background: rgba(34, 197, 94, 0.2); color: var(--success); font-size: 0.6rem; padding: 4px 8px; border-radius: 4px; border: 1px solid var(--success); }
 
-        /* The Result Card with Glass-morphism */
-        .result-card { 
-            display: none; background: var(--panel); border: 1px solid var(--border); 
-            border-radius: 28px; overflow: hidden; 
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(20px);
-            animation: slideUp 0.5s ease-out;
-        }
-        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        /* Pre-set Audit Buttons */
+        .audit-grid { display: grid; grid-template-columns: 1fr; gap: 10px; margin: 20px 0; }
+        .audit-btn { background: #334155; border: 1px solid #475569; color: white; padding: 12px; border-radius: 10px; text-align: left; cursor: pointer; transition: 0.3s; font-size: 0.85rem; font-weight: 600; }
+        .audit-btn:hover { border-color: var(--accent); background: #3d4d61; }
 
-        .result-grid { display: grid; grid-template-columns: 480px 1fr; min-height: 600px; }
-        .result-text { padding: 40px; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
+        /* Thought Stream & Response */
+        #response-container { flex: 1; overflow-y: auto; margin-top: 10px; padding-right: 10px; }
+        .thought-stream { font-family: monospace; font-size: 0.75rem; color: var(--accent); margin-bottom: 15px; border-left: 2px solid var(--accent); padding-left: 10px; opacity: 0.8; }
         
-        .meta-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 24px 0; }
-        .meta-item { background: rgba(255,255,255,0.03); padding: 12px; border-radius: 12px; border: 1px solid var(--border); }
-        .meta-label { font-size: 0.6rem; text-transform: uppercase; color: var(--accent); font-weight: 800; margin-bottom: 4px; display: block; }
-        .meta-val { font-size: 0.9rem; font-weight: 600; font-family: 'JetBrains Mono'; }
+        /* Intelligence Card */
+        .insight-card { background: #0f172a; border-radius: 12px; padding: 20px; border: 1px solid #334155; animation: slideIn 0.4s ease-out; }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        .severity-meter { margin: 12px 0; height: 8px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
-        .severity-bar { height: 100%; width: 0%; transition: 1.5s ease; box-shadow: 0 0 10px var(--accent); }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
+        .badge { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; padding: 4px 10px; border-radius: 20px; }
+        .badge.danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+        .badge.warning { background: rgba(251, 191, 36, 0.2); color: #fbbf24; border: 1px solid #fbbf24; }
 
-        .result-visual { background: #000; position: relative; overflow: hidden; }
-        .result-visual img { width: 100%; height: 100%; object-fit: cover; opacity: 0.6; }
+        .factor-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; }
+        .factor { background: #1e293b; padding: 10px; border-radius: 8px; font-size: 0.75rem; }
+        .factor b { display: block; color: var(--accent); margin-bottom: 2px; }
 
-        /* SIH SPECIAL: GIS Layer Legend */
-        .layer-legend {
-            position: absolute; bottom: 20px; left: 20px; background: rgba(0,0,0,0.8);
-            padding: 12px; border-radius: 10px; border: 1px solid var(--border); font-size: 0.65rem;
-        }
-        .layer-item { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; color: #fff; }
-        .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .action-bar { display: flex; gap: 10px; margin-top: 15px; }
+        .action-btn { flex: 1; padding: 8px; border-radius: 6px; border: none; font-size: 0.75rem; font-weight: 700; cursor: pointer; }
+        .btn-forward { background: var(--success); color: white; }
+        .btn-locate { background: var(--accent); color: var(--bg); }
 
-        .btn { padding: 12px 20px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
-        .btn-primary { background: var(--accent); color: #000; }
-        .footer-input { padding: 30px 40px; background: var(--panel); border-top: 1px solid var(--border); display: flex; gap: 16px; backdrop-filter: blur(10px); }
-        .input-field { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid var(--border); padding: 16px; border-radius: 12px; color: #fff; outline: none; }
+        /* Map UI */
+        #map { flex: 1; border-radius: 16px; border: 1px solid #334155; position: relative; }
+        .map-overlay { position: absolute; top: 15px; right: 15px; background: rgba(15, 23, 42, 0.8); padding: 8px 15px; border-radius: 20px; font-size: 0.7rem; z-index: 1000; border: 1px solid var(--accent); }
     </style>
 </head>
 <body>
 
-<header>
-    <div style="font-weight: 800;">🏙️ CITYPULSE <span style="font-weight: 300; color: var(--accent);">NATIONAL AI HUB</span></div>
-    <div style="font-size: 0.7rem; background: var(--success); color: #000; padding: 4px 10px; border-radius: 20px; font-weight: 800;">LIVE CONNECT: SENTINEL-2B</div>
-</header>
-
-<div class="app-container">
-    <aside class="sidebar">
-        <h4 style="font-size: 0.7rem; color: var(--accent); text-transform: uppercase;">Inference Thought-Stream</h4>
-        <div id="terminal">> AWAITING_QUERY...</div>
+<div class="master-container">
+    <div class="sidebar">
+        <h2>CityPulse AI <span class="live-tag">LIVE SAT-STREAM</span></h2>
         
-        <div style="margin-top: 30px;">
-            <h4 style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 10px;">PRE-SET POLICY AUDITS</h4>
-            <button class="btn" style="width:100%; background:rgba(255,255,255,0.05); color:#fff; margin-bottom:8px; text-align:left; border:1px solid var(--border);" onclick="fillSearch('Show unsafe school zones within 500 m of highways')">🏫 School Safety Audit</button>
-            <button class="btn" style="width:100%; background:rgba(255,255,255,0.05); color:#fff; margin-bottom:8px; text-align:left; border:1px solid var(--border);" onclick="fillSearch('Where should we add EV charging stations?')">⚡ EV Grid Plan</button>
-            <button class="btn" style="width:100%; background:rgba(255,255,255,0.05); color:#fff; text-align:left; border:1px solid var(--border);" onclick="fillSearch('Which wards will face flooding in 2030?')">🌊 2030 Flood Forecast</button>
-        </div>
-    </aside>
-
-    <main class="main-view">
-        <div id="hero" class="hero">
-            <h1 style="font-size: 3rem; letter-spacing: -1px;">Chat with your <span style="color: var(--accent);">City.</span></h1>
-            <p style="color: var(--text-muted); margin-top: 15px;">Official Decision Support System for Urban Planning and Hazard Mitigation.</p>
+        <div class="audit-grid">
+            <button class="audit-btn" onclick="runInference('school')">🏫 School Safety Highway Audit</button>
+            <button class="audit-btn" onclick="runInference('ev')">⚡ EV Grid Optimization Plan</button>
+            <button class="audit-btn" onclick="runInference('flood')">🌊 2030 Inundation Forecast</button>
         </div>
 
-        <div id="result-card" class="result-card">
-            <div class="result-grid">
-                <div class="result-text">
-                    <div style="display: flex; justify-content: space-between;">
-                        <span id="source-tag" style="font-size: 0.6rem; background: rgba(56, 189, 248, 0.2); color: var(--accent); padding: 4px 8px; border-radius: 4px; font-weight: 800;">DATA: SENTINEL-2 L2A</span>
-                        <span id="case-id" style="font-family: 'JetBrains Mono'; font-size: 0.65rem; opacity: 0.5;"></span>
-                    </div>
-                    <h2 id="res-title" style="margin-top: 20px;"></h2>
-                    <p id="res-desc" style="color: var(--text-muted); margin-top: 12px; line-height: 1.5; font-size: 0.9rem;"></p>
-
-                    <div class="meta-grid">
-                        <div class="meta-item"><span class="meta-label">Confidence</span><span class="meta-val" id="count-conf">0%</span></div>
-                        <div class="meta-item"><span class="meta-label">Last Overpass</span><span class="meta-val" id="last-date">24 Jan 2026</span></div>
-                        <div class="meta-item"><span class="meta-label" id="label-1">Impact</span><span class="meta-val" id="count-res">0</span></div>
-                        <div class="meta-item"><span class="meta-label">Data Engine</span><span class="meta-val">Bhuvan-AI</span></div>
-                    </div>
-
-                    <div style="margin-bottom: 20px;">
-                        <div style="display: flex; justify-content: space-between; font-size: 0.7rem; font-weight: 800;">
-                            <span>URGENCY INDEX</span>
-                            <span id="severity-label">0%</span>
-                        </div>
-                        <div class="severity-meter"><div id="severity-bar" class="severity-bar"></div></div>
-                    </div>
-
-                    <div style="margin-top: auto; display: flex; gap: 10px;">
-                        <button class="btn btn-primary" style="flex: 1;" onclick="routeMemo()">📤 Forward to Dept.</button>
-                        <button class="btn" style="background: rgba(255,255,255,0.05); color:#fff; border:1px solid var(--border);" onclick="alert('Raw GIS GeoJSON data exported for ArcGIS/QGIS.')">📂 Export Layers</button>
-                    </div>
-                </div>
-                <div class="result-visual">
-                    <img id="res-img" src="">
-                    <div class="layer-legend">
-                        <div style="font-weight: 800; margin-bottom: 8px; border-bottom: 1px solid #333; padding-bottom: 4px;">ACTIVE GIS LAYERS</div>
-                        <div class="layer-item"><div class="dot" style="background: var(--accent);"></div> Satellite (True Color)</div>
-                        <div class="layer-item"><div class="dot" style="background: var(--danger);"></div> Buffer (500m Zone)</div>
-                        <div class="layer-item"><div class="dot" style="background: var(--success);"></div> Points of Interest</div>
-                    </div>
-                </div>
-            </div>
+        <div id="response-container">
+            <div class="thought-stream" id="thought-stream" style="display:none;"></div>
+            <div id="intelligence-card"></div>
         </div>
-    </main>
-</div>
+    </div>
 
-<div class="footer-input">
-    <input type="text" id="query-input" class="input-field" placeholder="Search by policy question or ward ID...">
-    <button class="btn btn-primary" onclick="executeAnalysis()">Analyze Insight</button>
+    <div id="map">
+        <div class="map-overlay" id="map-status">ENGINE IDLE: AWAITING QUERY</div>
+    </div>
 </div>
 
 <script>
-    const dataset = {
+    let map, activeLayer;
+
+    function initMap() {
+        map = L.map('map', { zoomControl: false }).setView([28.6289, 77.3649], 15);
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Esri Satellite'
+        }).addTo(map);
+    }
+
+    const cityBrain = {
         school: {
-            title: "School Safety Buffer Audit",
-            desc: "Semantic overlay shows 14 schools intersecting with a 500m highway buffer. NDWI indices exclude water-logging risks. Recommendation: Speed-cameras required in Wards 4 & 7.",
-            img: "https://images.unsplash.com/photo-1594154991131-314138e6639d?q=80&w=2000",
-            res: 500, conf: 98, sev: 85, l1: "Buffer Radius", src: "SENTINEL-2 + OSM", dept: "Traffic Police Dept."
+            title: "School Zone Safety Risk",
+            badge: "danger",
+            text: "Detected 12 high-priority school zones within 500m of National Highway 24. AI analysis reveals lack of speed governors and pedestrian overpasses.",
+            social: "1,200+ students at high risk daily. Footfall exceeds road capacity.",
+            economic: "Potential ₹14.5L/yr reduction in emergency healthcare costs.",
+            resource: "Nearest critical care unit is 4.2km away (High Latency Zone).",
+            sustain: "Aligns with SDG 3.6: Half global road traffic deaths.",
+            source: "Source: OGD School Census + NHAI Polyline Data",
+            latlng: [28.625, 77.365],
+            zoom: 17,
+            dept: "Public Works Dept (PWD)"
         },
         ev: {
-            title: "EV Infrastructure Optimization",
-            desc: "AI processed night-light economic activity + residential density. Cluster analysis identifies Sector 4 as the optimal ROI for a 50kW Rapid DC Charger.",
-            img: "https://images.unsplash.com/photo-1593941707882-a5bba14938c7?q=80&w=2000",
-            res: 2, conf: 94, sev: 30, l1: "Dist. to Grid", src: "BHUVAN + ENERGY GRID", dept: "Energy Ministry"
+            title: "EV Grid Optimization",
+            badge: "warning",
+            text: "Identified 8 optimal clusters for DC Fast Charging. Prioritizing locations with <200m distance from 11kV transformers.",
+            social: "Increases clean mobility access for 45,000 ward residents.",
+            economic: "Projected ₹2.2Cr annual revenue for Municipal Corp.",
+            resource: "Utilizes 15% spare grid capacity without transformer upgrade.",
+            sustain: "SDG 7.2: Increase share of renewable energy.",
+            source: "Source: DISCOM Load Maps + Bhuvan POI Data",
+            latlng: [28.632, 77.368],
+            zoom: 16,
+            dept: "Energy & Utilities Dept"
         },
         flood: {
-            title: "2030 Inundation Forecast",
-            desc: "Predictive modeling based on LiDAR height-maps. Ward 12 drainage systems will be 40% undersized for 2030 rainfall projections.",
-            img: "https://images.unsplash.com/photo-1547683905-f686c993aae5?q=80&w=2000",
-            res: 12, conf: 89, sev: 75, l1: "At-Risk Wards", src: "LIDAR + ISRO CLIMATE", dept: "Municipal Admin (BBMP)"
+            title: "2030 Inundation Model",
+            badge: "danger",
+            text: "Topological flow analysis indicates severe water logging risk in Sector 62. Projected rainfall increase: +18% by 2030.",
+            social: "Risk of displacement for 3,500 low-income households.",
+            economic: "₹8.2Cr projected infrastructure damage if drainage is not expanded.",
+            resource: "Current culvert capacity is 40% below 2030 requirements.",
+            sustain: "SDG 13.1: Strengthen resilience to climate disasters.",
+            source: "Source: NASA SRTM (DEM) + IMD Precipitation Trends",
+            latlng: [28.628, 77.360],
+            zoom: 16,
+            dept: "Disaster Management Authority"
         }
     };
 
-    let currentDept = "";
-
-    function log(msg) {
-        const t = document.getElementById('terminal');
-        t.innerHTML += `<br>> ${msg}`;
-        t.scrollTop = t.scrollHeight;
-    }
-
-    function animateValue(id, start, end, duration, suffix = "") {
-        let obj = document.getElementById(id);
-        let current = start;
-        let range = end - start;
-        let increment = end > start ? Math.ceil(range/20) : Math.floor(range/20);
-        let timer = setInterval(() => {
-            current += increment;
-            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-                obj.innerText = end + suffix; clearInterval(timer);
-            } else { obj.innerText = Math.floor(current) + suffix; }
-        }, 40);
-    }
-
-    function executeAnalysis() {
-        const q = document.getElementById('query-input').value.toLowerCase();
-        if(!q) return;
-        document.getElementById('hero').style.display = 'none';
-        document.getElementById('result-card').style.display = 'none';
+    function runInference(type) {
+        const data = cityBrain[type];
+        const thought = document.getElementById('thought-stream');
+        const card = document.getElementById('intelligence-card');
         
-        log("USER_ID_04: Requesting " + q);
-        setTimeout(() => log("PULLING SPECTRAL TILES FROM BHUVAN..."), 500);
-        setTimeout(() => log("OVERLAYING TOPOGRAPHIC LAYERS..."), 1200);
+        // Reset UI
+        card.innerHTML = "";
+        thought.style.display = "block";
+        thought.innerText = "Initializing Inference Thought-Stream...\n> Accessing Remote Sensing Data...\n> Cross-referencing Policy Mandates...\n> Calculating Multi-dimensional ROI...";
 
+        // Simulate "Thinking" time
         setTimeout(() => {
-            let entry = q.includes('school') ? dataset.school : (q.includes('ev') ? dataset.ev : dataset.flood);
-            currentDept = entry.dept;
-            document.getElementById('result-card').style.display = 'block';
-            document.getElementById('res-title').innerText = entry.title;
-            document.getElementById('res-desc').innerText = entry.desc;
-            document.getElementById('res-img').src = entry.img;
-            document.getElementById('source-tag').innerText = "SOURCE: " + entry.src;
-            document.getElementById('label-1').innerText = entry.l1;
-            document.getElementById('case-id').innerText = "SID-" + Math.floor(Math.random()*90000);
-
-            animateValue("count-res", 0, entry.res, 500, q.includes('ev') ? "km" : "m");
-            animateValue("count-conf", 0, entry.conf, 500, "%");
+            thought.style.display = "none";
+            document.getElementById('map-status').innerText = `ANALYZING: ${data.title.toUpperCase()}`;
             
-            setTimeout(() => {
-                document.getElementById('severity-bar').style.width = entry.sev + "%";
-                document.getElementById('severity-bar').style.background = (entry.sev > 70) ? 'var(--danger)' : 'var(--accent)';
-                animateValue("severity-label", 0, entry.sev, 800, "%");
-            }, 100);
-            log("ANALYSIS READY FOR REVIEW.");
-        }, 1800);
+            // Map Reaction
+            if(activeLayer) map.removeLayer(activeLayer);
+            map.flyTo(data.latlng, data.zoom);
+            activeLayer = L.circle(data.latlng, {
+                color: data.badge === 'danger' ? '#ef4444' : '#fbbf24',
+                fillColor: data.badge === 'danger' ? '#ef4444' : '#fbbf24',
+                fillOpacity: 0.3, radius: 400
+            }).addTo(map).bindPopup(data.title).openPopup();
+
+            // Render Intelligence Card
+            card.innerHTML = `
+                <div class="insight-card">
+                    <div class="card-header">
+                        <span class="badge ${data.badge}">${data.title}</span>
+                        <small style="color:var(--text)">Confidence: 94.2%</small>
+                    </div>
+                    <p style="font-size:0.85rem; margin: 0 0 15px 0;">${data.text}</p>
+                    
+                    <div class="factor-grid">
+                        <div class="factor"><b>🤝 Social Impact</b>${data.social}</div>
+                        <div class="factor"><b>💰 Economic ROI</b>${data.economic}</div>
+                        <div class="factor"><b>🛠 Resource Audit</b>${data.resource}</div>
+                        <div class="factor"><b>🌍 Sustainability</b>${data.sustain}</div>
+                    </div>
+
+                    <div class="action-bar">
+                        <button class="action-btn btn-locate" onclick="map.flyTo([${data.latlng}], ${data.zoom})">📍 Locate Cluster</button>
+                        <button class="action-btn btn-forward" onclick="alert('Insight forwarded to ${data.dept}')">📤 Forward to Dept</button>
+                    </div>
+                    
+                    <div style="font-size:0.6rem; color:var(--text); margin-top:15px; text-align:center; border-top: 1px solid #334155; padding-top:10px;">
+                        ${data.source}
+                    </div>
+                </div>
+            `;
+        }, 1500);
     }
 
-    function routeMemo() {
-        log("COMPILING POLICY MEMO...");
-        setTimeout(() => {
-            log("MEMO SECURELY FORWARDED TO: " + currentDept);
-            alert("Strategic Memo and GIS Layers successfully routed to the " + currentDept);
-        }, 1200);
-    }
-
-    function fillSearch(val) { document.getElementById('query-input').value = val; }
-    function toggleTheme() { alert("High-Contrast Command Mode Active."); }
+    window.onload = initMap;
 </script>
+
 </body>
 </html>
